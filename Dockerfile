@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM --platform=linux/amd64 ubuntu:22.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -71,6 +71,25 @@ WORKDIR /home/aosp/aosp
 # Initialize repo (this layer can be cached)
 RUN repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r1
 
+# Set environment variables to ensure output is visible during build
+ENV PYTHONUNBUFFERED=1
+
+SHELL ["/bin/bash", "-c"]
+
+# Create sync script and perform initial repo sync
+RUN echo '#!/bin/bash\n \
+set -o errexit\n \
+set -o nounset\n \
+set -o pipefail\n \
+set -o xtrace\n \
+echo "Syncing repository changes..."\n \
+repo sync --jobs=$(nproc) --verbose --current-branch --no-tags\n \
+echo "Sync completed!"' > /home/aosp/sync_aosp.sh && \
+    chmod +x /home/aosp/sync_aosp.sh
+
+# Perform initial repo sync
+RUN /home/aosp/sync_aosp.sh    
+
 # Set up build environment
 ENV ANDROID_BUILD_TOP=/home/aosp/aosp
 ENV ANDROID_PRODUCT_OUT=/home/aosp/aosp/out/target/product/generic_x86_64
@@ -89,13 +108,7 @@ m -j$(nproc)\n\
 echo "Build completed successfully!"' > /home/aosp/build_aosp.sh && \
     chmod +x /home/aosp/build_aosp.sh
 
-# Create sync script for updates
-RUN echo '#!/bin/bash\n\
-set -e\n\
-echo "Syncing latest changes..."\n\
-repo sync -j$(nproc)\n\
-echo "Sync completed!"' > /home/aosp/sync_aosp.sh && \
-    chmod +x /home/aosp/sync_aosp.sh
+
 
 # Set default command
 CMD ["/bin/bash"]
