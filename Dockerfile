@@ -74,8 +74,6 @@ RUN repo init -u https://android.googlesource.com/platform/manifest -b android-1
 # Set environment variables to ensure output is visible during build
 ENV PYTHONUNBUFFERED=1
 
-SHELL ["/bin/bash", "-c"]
-
 # Create sync script and perform initial repo sync
 RUN echo '#!/bin/bash\n \
 set -o errexit\n \
@@ -94,21 +92,11 @@ RUN /home/aosp/sync_aosp.sh
 ENV ANDROID_BUILD_TOP=/home/aosp/aosp
 ENV ANDROID_PRODUCT_OUT=/home/aosp/aosp/out/target/product/generic_x86_64
 
-# Create build script
-RUN echo '#!/bin/bash\n\
-set -e\n\
-echo "Syncing repository..."\n\
-repo sync -j$(nproc)\n\
-echo "Setting up build environment..."\n\
-source build/envsetup.sh\n\
-echo "Selecting build target..."\n\
-lunch aosp_x86_64-eng\n\
-echo "Starting build..."\n\
-m -j$(nproc)\n\
-echo "Build completed successfully!"' > /home/aosp/build_aosp.sh && \
-    chmod +x /home/aosp/build_aosp.sh
+SHELL ["/bin/bash", "-c"]
 
-
+RUN source build/envsetup.sh \
+    && lunch aosp_arm64-eng \
+    && m
 
 # Set default command
 CMD ["/bin/bash"]

@@ -10,3 +10,21 @@ The goal here is to structure the Dockerfile so many expensive operations need o
 
 The image stripes can be fully rebuilt using `--no-cache` periodically using a slow overnight job.  Then ongoing work/checks will be quicker.
 
+## Getting Started
+
+Make sure you have Docker installed (or a good substitute, like `colima`).  
+
+Since this Dockerfile creates an image that includes all of the AOSP source, the image file will be very large.  Be sure to configure Docker to tolerate a large image (over 200GB).  In Docker Desktop on Mac, you can configure this via Docker Desktop Settings → Resources → Advanced → Disk image size
+
+Build the Docker image:
+```
+export DOCKER_BUILDKIT=1
+docker build --progress=plain -t aosp-builder .
+```
+
+
+## Run The Docker Container interactively:
+
+```
+docker run -it --name aosp-build --hostname aosp-build aosp-builder
+```
