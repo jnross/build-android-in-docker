@@ -28,3 +28,17 @@ docker build --progress=plain -t aosp-builder .
 ```
 docker run -it --name aosp-build --hostname aosp-build aosp-builder
 ```
+
+Or resume the existing container:
+
+```
+docker start asop-build
+```
+
+## Build from inside the container
+
+```
+source build/envsetup.sh
+lunch aosp_cf_arm64_phone-userdebug
+m
+```

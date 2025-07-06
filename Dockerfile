@@ -33,6 +33,7 @@ RUN apt-get update && apt-get install -y \
     bc \
     rsync \
     ccache \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Java 8 as default
@@ -69,7 +70,7 @@ RUN mkdir -p /home/aosp/aosp
 WORKDIR /home/aosp/aosp
 
 # Initialize repo (this layer can be cached)
-RUN repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r1
+RUN repo init -u https://android.googlesource.com/platform/manifest -b android-12.1.0_r27
 
 # Set environment variables to ensure output is visible during build
 ENV PYTHONUNBUFFERED=1
@@ -85,21 +86,43 @@ repo sync --jobs=$(nproc) --verbose --current-branch --no-tags\n \
 echo "Sync completed!"' > /home/aosp/sync_aosp.sh && \
     chmod +x /home/aosp/sync_aosp.sh
 
-# Perform initial repo sync
-RUN /home/aosp/sync_aosp.sh    
+# # Perform initial repo sync
+# RUN /home/aosp/sync_aosp.sh    
 
-# Set up build environment
-ENV ANDROID_BUILD_TOP=/home/aosp/aosp
-ENV ANDROID_PRODUCT_OUT=/home/aosp/aosp/out/target/product/generic_x86_64
+COPY ./board_config.mk.patch /home/aosp/
 
-SHELL ["/bin/bash", "-c"]
+ENV ART_BOOT_IMAGE_EXTRA_ARGS="--runtime-arg -Xms32m --runtime-arg -Xmx512m"
+ENV WITH_DEXPREOPT=false
 
-RUN source build/envsetup.sh \
-    && lunch aosp_arm64-eng \
-    && m
+# # Set up build environment
+# ENV ANDROID_BUILD_TOP=/home/aosp/aosp
+# ENV ANDROID_PRODUCT_OUT=/home/aosp/aosp/out/target/product/generic_x86_64
 
-# Set default command
-CMD ["/bin/bash"]
+# SHELL ["/bin/bash", "-c"]
+#
+# RUN source build/envsetup.sh \
+#     && lunch aosp_arm64-eng \
+#     && m
+
+CMD /bin/bash -c 'cat << "EOF"
+🚀 AOSP Build Environment Ready!
+
+Instructions:
+1. Sync AOSP source: `~/sync_aosp.sh`
+2. Patch to enable WITH_DEXPREOPT environment variable: `git apply --directory build/make ~/board_config.mk.patch`
+3. Setup the rest of the build environment: `source/envsetup.sh`
+4. Setup build target: `lunch aosp_arm64-eng`
+5. Build! `m`
+
+Quick commands:
+  ~/sync_aosp.sh
+  git apply --directory build/make ~/board_config.mk.patch
+  source build/envsetup.sh
+  lunch aosp_arm64-eng
+  m
+
+EOF
+exec bash'
 
 # Build instructions:
 # 1. Build the image: docker build -t aosp-builder .
